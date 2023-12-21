@@ -6,88 +6,76 @@
  * @flow strict-local
  */
 
-import React, {useRef, useState} from 'react';
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View} from 'react-native';
 import WebView from 'react-native-webview';
+import ReactNativeBlobUtil from 'react-native-blob-util';
+import Share from 'react-native-share';
+import reactNativeFS from 'react-native-fs';
 
 const NewWebView = () => {
-  const [uri, setUri] = useState('https://www.google.com');
-  console.log('⛔⛔⛔ ~ file: webview.js:21 ~ uri: ⛳', uri);
-  const [inputText, setInputText] = useState('https://www.google.com');
-  const webviewRef = useRef<WebView>(null);
+  const uri = 'https://www.pexels.com/vi-vn/tim-kiem/videos/4k/';
+  const [uriDL, setUriDl] = useState(['https://www.pexels.com/vi-vn/tim-kiem/videos/4k/']);
+  // useEffect(() => {
+  //   setInterval(() => {
+  //     const d = new Date();
+  //     console.log(d.getTime());
+  //   }, 1000);
+  // }, []);
+  useEffect(() => {
+    const x = `${reactNativeFS.DocumentDirectoryPath}/downloads`;
+    console.log('⛔⛔⛔ ~ file: webview.js:26 ~ dirs: ⛳', x);
 
+    ReactNativeBlobUtil.config({
+      // add this option that makes response data to be stored as a file,
+      // this is much more performant.
+      fileCache: true,
+      appendExt: 'mp4',
+      path: `${reactNativeFS.DocumentDirectoryPath}/downloads`,
+    })
+      .fetch('GET', uriDL[0], {
+        //some headers ..
+      })
+      .then(res => {
+        // the temp file path
+        console.log('The file saved to ', res.path());
+        // sharexx(res.path());
+      });
+  }, [uriDL]);
+  const sharexx = () => {
+    const shareOptions = {
+      title: 'Share via',
+      message: 'some message',
+      url: 'some share url',
+      social: Share.Overlay,
+      whatsAppNumber: '9199999999', // country code + phone number
+      filename: 'test', // only for base64 file in Android
+    };
+    Share.shareSingle(shareOptions)
+      .then(res => {
+        console.log(res);
+      })
+      .catch(err => {
+        err && console.log(err);
+      });
+  };
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: 'red',
-        padding: 10,
-        paddingVertical: 30,
-      }}>
-      <Text>WebView</Text>
-      <View style={{flexDirection: 'row'}}>
-        <TextInput
-          value={inputText}
-          onChangeText={text => setInputText(text)}
-          style={{height: 50, flex: 1, backgroundColor: 'white'}}
-          autoComplete="one-time-code"
-        />
-        <TouchableOpacity
-          style={{backgroundColor: 'white', marginLeft: 20}}
-          onPress={() => setUri(inputText)}>
-          <Text>Search</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={{flex: 1, backgroundColor: 'white', marginTop: 20}}>
-        <WebView
-          source={{uri}}
-          ref={webviewRef}
-          webviewDebuggingEnabled
-          cacheEnabled
-        />
-      </View>
-      <View style={{flex: 1, backgroundColor: 'white', marginTop: 20}}>
-        <WebView
-          source={{uri}}
-          ref={webviewRef}
-          incognito
-          webviewDebuggingEnabled
-          cacheEnabled
-        />
-      </View>
-      <View style={{flex: 1, backgroundColor: 'white', marginTop: 20}}>
-        <WebView
-          source={{uri}}
-          ref={webviewRef}
-          webviewDebuggingEnabled
-          cacheEnabled
-        />
-      </View>
-      <View style={{backgroundColor: 'white', marginTop: 20}}>
-        <TouchableOpacity
-          style={{backgroundColor: 'white', marginLeft: 20}}
-          onPress={() => {
-            console.log('123123213', webviewRef?.current);
-            webviewRef?.current.goBack();
-          }}>
-          <Text>back</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={{flex: 1, backgroundColor: 'white', marginTop: 20}}>
+      <WebView
+        source={{uri}}
+        webviewDebugging
+        onMessage={e => {
+          console.log('==================>', e.nativeEvent);
+        }}
+        onLoadProgress={e => {
+          console.log('==onLoadProgress================>', e.nativeEvent);
+        }}
+        onFileDownload={e => {
+          setUriDl([e.nativeEvent.downloadUrl]);
+        }}
+      />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-});
 
 export default NewWebView;
